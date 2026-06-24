@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色档案 | 星尘编年史</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            overflow: hidden;
+            position: relative;
+        }
+        .hero {
+            background: linear-gradient(135deg, #2b1b4e, #1a2a6c);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 8px;
+        }
+        .hero .title {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #ffd966;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .edit-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            backdrop-filter: blur(4px);
+            transition: 0.2s;
+        }
+        .edit-btn:hover {
+            background: rgba(255,255,255,0.4);
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            background: #f9fafc;
+            border-radius: 24px;
+            padding: 20px 25px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .section h2 {
+            font-size: 1.6rem;
+            border-left: 5px solid #6a11cb;
+            padding-left: 15px;
+            margin-bottom: 20px;
+            color: #1e1e2f;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+            gap: 15px;
+        }
+        .info-item {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .info-item strong {
+            color: #6a11cb;
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        .story-text {
+            line-height: 1.7;
+            color: #2c3e50;
+        }
+        .items-list, .relations-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .item-badge, .relation-badge {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .quote-block {
+            background: #eef2ff;
+            padding: 12px 18px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+        .quote-block .quote-text {
+            font-size: 1rem;
+            color: #1f2937;
+        }
+        .quote-block .quote-tag {
+            font-size: 0.75rem;
+            color: #6a11cb;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+        .comment-section {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid #e2e8f0;
+        }
+        .comment-list {
+            margin-bottom: 24px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .comment-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+        .comment-author {
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .comment-time {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            margin-left: 10px;
+        }
+        .comment-text {
+            margin-top: 6px;
+            color: #4a5568;
+        }
+        .comment-input-area {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .comment-input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #cbd5e0;
+            border-radius: 40px;
+            outline: none;
+        }
+        .comment-input-area button {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .comment-input-area button:hover {
+            background: #4a0d9e;
+        }
+        /* 编辑模式样式 */
+        .edit-mode .info-item,
+        .edit-mode .story-text,
+        .edit-mode .item-badge,
+        .edit-mode .relation-badge,
+        .edit-mode .quote-block {
+            background: #fff8e7;
+            border: 1px dashed #f59e0b;
+        }
+        .edit-field {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: inherit;
+        }
+        .edit-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 12px;
+            font-family: inherit;
+        }
+        .edit-list-item {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .edit-list-item input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 20px;
+        }
+        .edit-list-item button {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 4px 12px;
+            cursor: pointer;
+        }
+        .add-btn {
+            background: #38a169;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 6px 16px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .save-btn {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 12px 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto 0;
+        }
+        .password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .password-box {
+            background: white;
+            padding: 30px;
+            border-radius: 32px;
+            text-align: center;
+            width: 300px;
+        }
+        .password-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border: 1px solid #cbd5e0;
+            border-radius: 40px;
+        }
+        .password-box button {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        @media (max-width: 640px) {
+            .hero h1 { font-size: 2rem; }
+            .content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container" id="characterContainer">
+    <div class="hero">
+        <h1 id="charName">加载中...</h1>
+        <div class="title" id="charTitle"></div>
+        <a href="second.html" class="back-link">← 返回人物页</a>
+        <button class="edit-btn" id="editBtn">🔐 编辑角色</button>
+    </div>
+    <div class="content" id="contentArea">
+        <!-- 动态内容会通过js渲染 -->
+    </div>
+</div>
+
+<script>
+    // ---------- 全局变量 ----------
+    let allCharacters = {};
+    let currentCharId = null;
+    let currentChar = null;
+    let isEditMode = false;
+    const ADMIN_PASSWORD = "admin123";
+
+    // ---------- 工具函数 ----------
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function getUrlParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    }
+
+    // 更新页面顶部的角色姓名和称号
+    function updateHeaderInfo() {
+        const nameEl = document.getElementById('charName');
+        const titleEl = document.getElementById('charTitle');
+        if (currentChar) {
+            nameEl.innerText = currentChar.name;
+            titleEl.innerText = currentChar.title;
+        } else {
+            nameEl.innerText = '未知角色';
+            titleEl.innerText = '';
+        }
+    }
+
+    // ---------- 加载所有角色数据 ----------
+    async function loadAllCharacters() {
+        try {
+            const response = await fetch('characters.json');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            allCharacters = await response.json();
+            
+            let idParam = parseInt(getUrlParam('id'));
+            if (isNaN(idParam) || !allCharacters[idParam]) {
+                const firstId = Object.keys(allCharacters)[0];
+                idParam = parseInt(firstId);
+            }
+            currentCharId = idParam;
+            currentChar = JSON.parse(JSON.stringify(allCharacters[currentCharId]));
+            
+            updateHeaderInfo();      // 更新标题
+            renderViewMode();        // 渲染只读视图
+        } catch (error) {
+            console.error(error);
+            document.getElementById('charName').innerText = '数据加载失败';
+            document.getElementById('charTitle').innerText = '';
+            document.getElementById('contentArea').innerHTML = '<p style="padding:20px;">无法加载 characters.json，请确保文件存在且通过HTTP服务器访问。</p>';
+        }
+    }
+
+    // ---------- 渲染普通模式（只读） ----------
+    function renderViewMode() {
+        isEditMode = false;
+        const contentDiv = document.getElementById('contentArea');
+        contentDiv.innerHTML = `
+            <div class="section">
+                <h2>📖 基础设定</h2>
+                <div class="info-grid" id="basicInfo"></div>
+            </div>
+            <div class="section">
+                <h2>📜 背景故事</h2>
+                <div class="story-text" id="backstory"></div>
+            </div>
+            <div class="section">
+                <h2>⚜️ 相关物品</h2>
+                <div class="items-list" id="itemsList"></div>
+            </div>
+            <div class="section">
+                <h2>💬 语录收集</h2>
+                <div id="quotesList"></div>
+            </div>
+            <div class="section">
+                <h2>🤝 人物关系</h2>
+                <div class="relations-list" id="relationsList"></div>
+            </div>
+            <div class="section comment-section">
+                <h2>💬 访客留言</h2>
+                <div id="commentList" class="comment-list"></div>
+                <div class="comment-input-area">
+                    <input type="text" id="commentAuthor" placeholder="你的名字" value="匿名">
+                    <input type="text" id="commentContent" placeholder="写下你的感想...">
+                    <button id="submitComment">发表</button>
+                </div>
+            </div>
+        `;
+        
+        // 基础设定
+        const basicDiv = document.getElementById('basicInfo');
+        for (const [key, value] of Object.entries(currentChar.basic)) {
+            const div = document.createElement('div');
+            div.className = 'info-item';
+            div.innerHTML = `<strong>${escapeHtml(key)}</strong><span>${escapeHtml(value)}</span>`;
+            basicDiv.appendChild(div);
+        }
+        // 背景故事
+        document.getElementById('backstory').innerText = currentChar.backstory;
+        // 物品
+        const itemsDiv = document.getElementById('itemsList');
+        currentChar.items.forEach(item => {
+            const badge = document.createElement('div');
+            badge.className = 'item-badge';
+            badge.innerHTML = `<strong>📦</strong> ${escapeHtml(item)}`;
+            itemsDiv.appendChild(badge);
+        });
+        // 语录
+        const quotesDiv = document.getElementById('quotesList');
+        currentChar.quotes.forEach(q => {
+            const block = document.createElement('div');
+            block.className = 'quote-block';
+            block.innerHTML = `<div class="quote-text">“${escapeHtml(q.text)}”</div><div class="quote-tag">—— ${escapeHtml(q.tag)}</div>`;
+            quotesDiv.appendChild(block);
+        });
+        // 关系
+        const relationsDiv = document.getElementById('relationsList');
+        currentChar.relations.forEach(rel => {
+            const badge = document.createElement('div');
+            badge.className = 'relation-badge';
+            badge.innerHTML = `🤝 ${escapeHtml(rel)}`;
+            relationsDiv.appendChild(badge);
+        });
+        
+        initComments(currentCharId);
+    }
+
+    // ---------- 渲染编辑模式 ----------
+    function renderEditMode() {
+        isEditMode = true;
+        const contentDiv = document.getElementById('contentArea');
+        let basicFieldsHtml = '';
+        for (const [key, value] of Object.entries(currentChar.basic)) {
+            basicFieldsHtml += `
+                <div class="edit-list-item">
+                    <input type="text" class="basic-key" value="${escapeHtml(key)}" placeholder="属性名" style="width:35%">
+                    <input type="text" class="basic-value" value="${escapeHtml(value)}" placeholder="属性值" style="width:55%">
+                    <button type="button" class="remove-basic-item">删除</button>
+                </div>
+            `;
+        }
+        let itemsHtml = '';
+        currentChar.items.forEach(item => {
+            itemsHtml += `
+                <div class="edit-list-item">
+                    <input type="text" class="item-input" value="${escapeHtml(item)}" style="flex:1">
+                    <button type="button" class="remove-item">删除</button>
+                </div>
+            `;
+        });
+        let quotesHtml = '';
+        currentChar.quotes.forEach(q => {
+            quotesHtml += `
+                <div class="edit-list-item">
+                    <input type="text" class="quote-tag" value="${escapeHtml(q.tag)}" placeholder="标签" style="width:30%">
+                    <input type="text" class="quote-text" value="${escapeHtml(q.text)}" placeholder="语录内容" style="flex:1">
+                    <button type="button" class="remove-quote">删除</button>
+                </div>
+            `;
+        });
+        let relationsHtml = '';
+        currentChar.relations.forEach(rel => {
+            relationsHtml += `
+                <div class="edit-list-item">
+                    <input type="text" class="relation-input" value="${escapeHtml(rel)}" style="flex:1">
+                    <button type="button" class="remove-relation">删除</button>
+                </div>
+            `;
+        });
+        
+        contentDiv.innerHTML = `
+            <div class="section">
+                <h2>📖 基础设定</h2>
+                <div id="basicEditContainer">${basicFieldsHtml}</div>
+                <button type="button" id="addBasicBtn" class="add-btn">+ 添加基础设定</button>
+            </div>
+            <div class="section">
+                <h2>📜 背景故事</h2>
+                <textarea id="backstoryEdit" class="edit-textarea">${escapeHtml(currentChar.backstory)}</textarea>
+            </div>
+            <div class="section">
+                <h2>⚜️ 相关物品</h2>
+                <div id="itemsEditContainer">${itemsHtml}</div>
+                <button type="button" id="addItemBtn" class="add-btn">+ 添加物品</button>
+            </div>
+            <div class="section">
+                <h2>💬 语录收集</h2>
+                <div id="quotesEditContainer">${quotesHtml}</div>
+                <button type="button" id="addQuoteBtn" class="add-btn">+ 添加语录</button>
+            </div>
+            <div class="section">
+                <h2>🤝 人物关系</h2>
+                <div id="relationsEditContainer">${relationsHtml}</div>
+                <button type="button" id="addRelationBtn" class="add-btn">+ 添加关系</button>
+            </div>
+            <button id="saveEditBtn" class="save-btn">💾 保存修改并导出 JSON</button>
+            <button id="cancelEditBtn" class="save-btn" style="background:#6c757d; margin-top:12px;">取消编辑</button>
+        `;
+        attachEditEvents();
+    }
+    
+    function attachEditEvents() {
+        document.querySelectorAll('.remove-basic-item').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.edit-list-item').remove(); };
+        });
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.edit-list-item').remove(); };
+        });
+        document.querySelectorAll('.remove-quote').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.edit-list-item').remove(); };
+        });
+        document.querySelectorAll('.remove-relation').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.edit-list-item').remove(); };
+        });
+        
+        const addBasic = document.getElementById('addBasicBtn');
+        if (addBasic) {
+            addBasic.onclick = () => {
+                const container = document.getElementById('basicEditContainer');
+                const newRow = document.createElement('div');
+                newRow.className = 'edit-list-item';
+                newRow.innerHTML = `
+                    <input type="text" class="basic-key" placeholder="属性名" style="width:35%">
+                    <input type="text" class="basic-value" placeholder="属性值" style="width:55%">
+                    <button type="button" class="remove-basic-item">删除</button>
+                `;
+                container.appendChild(newRow);
+                newRow.querySelector('.remove-basic-item').onclick = () => newRow.remove();
+            };
+        }
+        const addItem = document.getElementById('addItemBtn');
+        if (addItem) {
+            addItem.onclick = () => {
+                const container = document.getElementById('itemsEditContainer');
+                const newRow = document.createElement('div');
+                newRow.className = 'edit-list-item';
+                newRow.innerHTML = `<input type="text" class="item-input" style="flex:1"><button type="button" class="remove-item">删除</button>`;
+                container.appendChild(newRow);
+                newRow.querySelector('.remove-item').onclick = () => newRow.remove();
+            };
+        }
+        const addQuote = document.getElementById('addQuoteBtn');
+        if (addQuote) {
+            addQuote.onclick = () => {
+                const container = document.getElementById('quotesEditContainer');
+                const newRow = document.createElement('div');
+                newRow.className = 'edit-list-item';
+                newRow.innerHTML = `<input type="text" class="quote-tag" placeholder="标签" style="width:30%"><input type="text" class="quote-text" placeholder="语录内容" style="flex:1"><button type="button" class="remove-quote">删除</button>`;
+                container.appendChild(newRow);
+                newRow.querySelector('.remove-quote').onclick = () => newRow.remove();
+            };
+        }
+        const addRelation = document.getElementById('addRelationBtn');
+        if (addRelation) {
+            addRelation.onclick = () => {
+                const container = document.getElementById('relationsEditContainer');
+                const newRow = document.createElement('div');
+                newRow.className = 'edit-list-item';
+                newRow.innerHTML = `<input type="text" class="relation-input" style="flex:1"><button type="button" class="remove-relation">删除</button>`;
+                container.appendChild(newRow);
+                newRow.querySelector('.remove-relation').onclick = () => newRow.remove();
+            };
+        }
+        
+        const saveBtn = document.getElementById('saveEditBtn');
+        if (saveBtn) saveBtn.onclick = saveCurrentCharacter;
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (cancelBtn) cancelBtn.onclick = () => {
+            currentChar = JSON.parse(JSON.stringify(allCharacters[currentCharId]));
+            updateHeaderInfo();
+            renderViewMode();
+        };
+    }
+    
+    function collectEditedCharacter() {
+        const basic = {};
+        const basicRows = document.querySelectorAll('#basicEditContainer .edit-list-item');
+        basicRows.forEach(row => {
+            const keyInput = row.querySelector('.basic-key');
+            const valInput = row.querySelector('.basic-value');
+            if (keyInput && valInput && keyInput.value.trim()) {
+                basic[keyInput.value.trim()] = valInput.value;
+            }
+        });
+        const backstory = document.getElementById('backstoryEdit').value;
+        const items = [];
+        document.querySelectorAll('#itemsEditContainer .item-input').forEach(inp => {
+            if (inp.value.trim()) items.push(inp.value.trim());
+        });
+        const quotes = [];
+        document.querySelectorAll('#quotesEditContainer .edit-list-item').forEach(row => {
+            const tag = row.querySelector('.quote-tag')?.value.trim();
+            const text = row.querySelector('.quote-text')?.value.trim();
+            if (tag && text) quotes.push({ tag, text });
+        });
+        const relations = [];
+        document.querySelectorAll('#relationsEditContainer .relation-input').forEach(inp => {
+            if (inp.value.trim()) relations.push(inp.value.trim());
+        });
+        return { basic, backstory, items, quotes, relations };
+    }
+    
+    function saveCurrentCharacter() {
+        const updatedData = collectEditedCharacter();
+        currentChar = { ...currentChar, ...updatedData };
+        allCharacters[currentCharId] = currentChar;
+        
+        const jsonStr = JSON.stringify(allCharacters, null, 2);
+        const blob = new Blob([jsonStr], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'characters.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('已导出 characters.json 文件，请将此文件覆盖到网站目录中替换原文件，刷新页面即可看到修改。');
+        updateHeaderInfo();      // 确保标题显示最新姓名
+        renderViewMode();
+    }
+    
+    // ---------- 密码弹窗 ----------
+    function showPasswordModal() {
+        const modal = document.createElement('div');
+        modal.className = 'password-modal';
+        modal.innerHTML = `
+            <div class="password-box">
+                <h3>管理员验证</h3>
+                <input type="password" id="adminPassword" placeholder="请输入密码" autocomplete="off">
+                <div>
+                    <button id="pwdConfirm">确认</button>
+                    <button id="pwdCancel">取消</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const confirmBtn = document.getElementById('pwdConfirm');
+        const cancelBtn = document.getElementById('pwdCancel');
+        const pwdInput = document.getElementById('adminPassword');
+        const closeModal = () => modal.remove();
+        confirmBtn.onclick = () => {
+            if (pwdInput.value === ADMIN_PASSWORD) {
+                closeModal();
+                renderEditMode();
+            } else {
+                alert('密码错误，无法编辑');
+                closeModal();
+            }
+        };
+        cancelBtn.onclick = closeModal;
+        pwdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') confirmBtn.click();
+        });
+    }
+    
+    // ---------- 评论区 ----------
+    let comments = [];
+    function initComments(characterId) {
+        const STORAGE_KEY = `character_comments_${characterId}`;
+        function loadComments() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            comments = stored ? JSON.parse(stored) : [
+                { author: "旅人", text: "这个角色设定好棒！", time: new Date().toLocaleString() },
+                { author: "星尘", text: "期待更多故事发展。", time: new Date().toLocaleString() }
+            ];
+            saveComments();
+            renderComments();
+        }
+        function saveComments() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(comments));
+        }
+        function renderComments() {
+            const container = document.getElementById('commentList');
+            if (!container) return;
+            container.innerHTML = '';
+            if (comments.length === 0) {
+                container.innerHTML = '<div style="padding:16px;text-align:center;color:#888;">暂无留言，来做第一个评论者吧✨</div>';
+                return;
+            }
+            comments.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'comment-item';
+                div.innerHTML = `
+                    <div><span class="comment-author">${escapeHtml(c.author)}</span><span class="comment-time">${c.time}</span></div>
+                    <div class="comment-text">${escapeHtml(c.text)}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        const submitBtn = document.getElementById('submitComment');
+        if (submitBtn) {
+            submitBtn.onclick = () => {
+                const authorInput = document.getElementById('commentAuthor');
+                const contentInput = document.getElementById('commentContent');
+                let author = authorInput.value.trim();
+                const content = contentInput.value.trim();
+                if (!content) { alert('请填写评论内容'); return; }
+                if (!author) author = '匿名';
+                comments.unshift({ author, text: content, time: new Date().toLocaleString() });
+                saveComments();
+                renderComments();
+                contentInput.value = '';
+                authorInput.value = author;
+            };
+        }
+        loadComments();
+    }
+    
+    // 页面启动
+    document.getElementById('editBtn').addEventListener('click', () => {
+        if (isEditMode) return;
+        showPasswordModal();
+    });
+    loadAllCharacters();
+</script>
+</body>
+</html>
