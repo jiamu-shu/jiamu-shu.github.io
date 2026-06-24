@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色数据管理</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui; }
+        body { background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 20px; }
+        .toolbar { display: flex; gap: 15px; justify-content: center; margin-bottom: 25px; flex-wrap: wrap; }
+        button { background: #6a11cb; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #4a0d9e; }
+        .character-editor {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .character-header {
+            display: flex;
+            gap: 20px;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+        .character-header input { font-size: 1.2rem; font-weight: bold; padding: 6px 12px; }
+        .field-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px,1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+        .field label { font-weight: bold; margin-bottom: 5px; font-size: 0.8rem; color: #4a5568; }
+        .field input, .field textarea { padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 12px; }
+        .full-width { grid-column: 1 / -1; }
+        textarea { min-height: 80px; }
+        .items-area, .relations-area, .quotes-area {
+            margin-top: 15px;
+            padding: 12px;
+            background: #f9fafc;
+            border-radius: 16px;
+        }
+        .item-row, .relation-row, .quote-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .remove-btn { background: #e53e3e; color: white; border: none; border-radius: 20px; padding: 4px 12px; cursor: pointer; font-size: 0.7rem; }
+        .add-btn { background: #38a169; margin-top: 8px; }
+        hr { margin: 30px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>✏️ 角色数据管理</h1>
+    <div class="toolbar">
+        <button id="exportBtn">📥 导出 JSON 文件</button>
+        <button id="importBtn">📂 导入 JSON 文件</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+    <div id="editorsContainer"></div>
+</div>
+
+<script>
+    let charactersData = {};
+
+    // 从默认 JSON 加载（先尝试加载 characters.json，如果存在则使用，否则使用内建示例）
+    async function loadDefaultData() {
+        try {
+            const response = await fetch('characters.json');
+            if (response.ok) {
+                charactersData = await response.json();
+            } else {
+                // 使用内置示例数据（与之前一致）
+                charactersData = await fetchDefaultBuiltin();
+            }
+        } catch (e) {
+            charactersData = await fetchDefaultBuiltin();
+        }
+        renderEditors();
+    }
+
+    async function fetchDefaultBuiltin() {
+        // 返回一个简化的默认数据（实际可以用上面 JSON 的内容）
+        // 为了节省篇幅，直接请求已有的 characters.json 的备份字符串？这里简单返回一个对象。
+        // 实际您可以把完整的 JSON 字符串放在这里，但为了避免代码过长，我提供一个最小示例。
+        // 注意：运行时如果有 characters.json 会自动使用，所以这里只是 fallback。
+        return {
+            "1": { "name": "示例角色", "title": "示例", "avatar": "⭐", "shortDesc": "请导入真实数据", "basic": {}, "backstory": "", "items": [], "quotes": [], "relations": [] }
+        };
+    }
+
+    function renderEditors() {
+        const container = document.getElementById('editorsContainer');
+        container.innerHTML = '';
+        for (const [id, char] of Object.entries(charactersData)) {
+            const editorDiv = document.createElement('div');
+            editorDiv.className = 'character-editor';
+            editorDiv.dataset.id = id;
+            editorDiv.innerHTML = `
+                <div class="character-header">
+                    <input type="text" placeholder="角色ID" value="${id}" class="char-id" disabled style="width:60px">
+                    <input type="text" placeholder="姓名" value="${escapeHtml(char.name)}" class="char-name">
+                    <input type="text" placeholder="称号" value="${escapeHtml(char.title)}" class="char-title">
+                    <input type="text" placeholder="头像emoji" value="${escapeHtml(char.avatar)}" class="char-avatar" style="width:80px">
+                    <input type="text" placeholder="简短描述" value="${escapeHtml(char.shortDesc)}" class="char-shortdesc">
+                </div>
+                <div class="field-group">
+                    <div class="field full-width"><label>背景故事</label><textarea class="char-backstory">${escapeHtml(char.backstory)}</textarea></div>
+                </div>
+                <div><strong>基础设定 (键值对)</strong></div>
+                <div class="field-group" id="basic-fields-${id}"></div>
+                <div class="items-area"><strong>物品列表</strong><div id="items-list-${id}"></div><button class="add-item-btn add-btn" data-id="${id}">+ 添加物品</button></div>
+                <div class="quotes-area"><strong>语录 (键值对)</strong><div id="quotes-list-${id}"></div><button class="add-quote-btn add-btn" data-id="${id}">+ 添加语录</button></div>
+                <div class="relations-area"><strong>人物关系</strong><div id="relations-list-${id}"></div><button class="add-relation-btn add-btn" data-id="${id}">+ 添加关系</button></div>
+                <hr>
+            `;
+            container.appendChild(editorDiv);
+
+            // 渲染基础设定键值对
+            const basicContainer = document.getElementById(`basic-fields-${id}`);
+            for (const [k, v] of Object.entries(char.basic)) {
+                const row = document.createElement('div');
+                row.className = 'field';
+                row.innerHTML = `
+                    <label>键</label><input type="text" class="basic-key" value="${escapeHtml(k)}" placeholder="属性名">
+                    <label>值</label><input type="text" class="basic-value" value="${escapeHtml(v)}" placeholder="属性值">
+                    <button class="remove-basic-btn" style="background:#e53e3e; margin-top:5px;">删除</button>
+                `;
+                basicContainer.appendChild(row);
+            }
+            // 添加基础设定按钮
+            const addBasicBtn = document.createElement('button');
+            addBasicBtn.textContent = '+ 添加基础设定';
+            addBasicBtn.className = 'add-btn';
+            addBasicBtn.onclick = () => {
+                const newRow = document.createElement('div');
+                newRow.className = 'field';
+                newRow.innerHTML = `
+                    <label>键</label><input type="text" class="basic-key" placeholder="属性名">
+                    <label>值</label><input type="text" class="basic-value" placeholder="属性值">
+                    <button class="remove-basic-btn" style="background:#e53e3e;">删除</button>
+                `;
+                basicContainer.appendChild(newRow);
+            };
+            basicContainer.appendChild(addBasicBtn);
+
+            // 物品列表
+            const itemsContainer = document.getElementById(`items-list-${id}`);
+            char.items.forEach((item, idx) => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `<input type="text" value="${escapeHtml(item)}" class="item-input"><button class="remove-item-btn remove-btn">删除</button>`;
+                itemsContainer.appendChild(row);
+            });
+
+            // 语录列表
+            const quotesContainer = document.getElementById(`quotes-list-${id}`);
+            char.quotes.forEach((q, idx) => {
+                const row = document.createElement('div');
+                row.className = 'quote-row';
+                row.innerHTML = `<input type="text" placeholder="标签" value="${escapeHtml(q.tag)}" class="quote-tag-input" style="width:100px"><input type="text" placeholder="语录内容" value="${escapeHtml(q.text)}" class="quote-text-input"><button class="remove-quote-btn remove-btn">删除</button>`;
+                quotesContainer.appendChild(row);
+            });
+
+            // 关系列表
+            const relationsContainer = document.getElementById(`relations-list-${id}`);
+            char.relations.forEach((rel, idx) => {
+                const row = document.createElement('div');
+                row.className = 'relation-row';
+                row.innerHTML = `<input type="text" value="${escapeHtml(rel)}" class="relation-input"><button class="remove-relation-btn remove-btn">删除</button>`;
+                relationsContainer.appendChild(row);
+            });
+        }
+        attachDynamicEvents();
+    }
+
+    function attachDynamicEvents() {
+        // 删除物品、语录、关系、基础设定的事件委托
+        document.querySelectorAll('.remove-item-btn').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.item-row').remove(); };
+        });
+        document.querySelectorAll('.remove-quote-btn').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.quote-row').remove(); };
+        });
+        document.querySelectorAll('.remove-relation-btn').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.relation-row').remove(); };
+        });
+        document.querySelectorAll('.remove-basic-btn').forEach(btn => {
+            btn.onclick = (e) => { e.target.closest('.field').remove(); };
+        });
+
+        // 添加物品、语录、关系
+        document.querySelectorAll('.add-item-btn').forEach(btn => {
+            btn.onclick = () => {
+                const id = btn.dataset.id;
+                const container = document.getElementById(`items-list-${id}`);
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `<input type="text" class="item-input"><button class="remove-item-btn remove-btn">删除</button>`;
+                container.appendChild(row);
+                row.querySelector('.remove-item-btn').onclick = () => row.remove();
+            };
+        });
+        document.querySelectorAll('.add-quote-btn').forEach(btn => {
+            btn.onclick = () => {
+                const id = btn.dataset.id;
+                const container = document.getElementById(`quotes-list-${id}`);
+                const row = document.createElement('div');
+                row.className = 'quote-row';
+                row.innerHTML = `<input type="text" placeholder="标签" class="quote-tag-input" style="width:100px"><input type="text" placeholder="语录内容" class="quote-text-input"><button class="remove-quote-btn remove-btn">删除</button>`;
+                container.appendChild(row);
+                row.querySelector('.remove-quote-btn').onclick = () => row.remove();
+            };
+        });
+        document.querySelectorAll('.add-relation-btn').forEach(btn => {
+            btn.onclick = () => {
+                const id = btn.dataset.id;
+                const container = document.getElementById(`relations-list-${id}`);
+                const row = document.createElement('div');
+                row.className = 'relation-row';
+                row.innerHTML = `<input type="text" class="relation-input"><button class="remove-relation-btn remove-btn">删除</button>`;
+                container.appendChild(row);
+                row.querySelector('.remove-relation-btn').onclick = () => row.remove();
+            };
+        });
+    }
+
+    function collectData() {
+        const updatedData = {};
+        const editors = document.querySelectorAll('.character-editor');
+        editors.forEach(editor => {
+            const id = editor.querySelector('.char-id').value;
+            const name = editor.querySelector('.char-name').value;
+            const title = editor.querySelector('.char-title').value;
+            const avatar = editor.querySelector('.char-avatar').value;
+            const shortDesc = editor.querySelector('.char-shortdesc').value;
+            const backstory = editor.querySelector('.char-backstory').value;
+
+            // 基础设定
+            const basic = {};
+            const basicFields = editor.querySelectorAll(`#basic-fields-${id} .field`);
+            basicFields.forEach(field => {
+                const keyInput = field.querySelector('.basic-key');
+                const valInput = field.querySelector('.basic-value');
+                if (keyInput && valInput && keyInput.value.trim()) {
+                    basic[keyInput.value.trim()] = valInput.value;
+                }
+            });
+
+            // 物品
+            const items = [];
+            editor.querySelectorAll(`#items-list-${id} .item-input`).forEach(inp => {
+                if (inp.value.trim()) items.push(inp.value.trim());
+            });
+            // 语录
+            const quotes = [];
+            editor.querySelectorAll(`#quotes-list-${id} .quote-row`).forEach(row => {
+                const tag = row.querySelector('.quote-tag-input')?.value.trim();
+                const text = row.querySelector('.quote-text-input')?.value.trim();
+                if (tag && text) quotes.push({ tag, text });
+            });
+            // 关系
+            const relations = [];
+            editor.querySelectorAll(`#relations-list-${id} .relation-input`).forEach(inp => {
+                if (inp.value.trim()) relations.push(inp.value.trim());
+            });
+
+            updatedData[id] = { name, title, avatar, shortDesc, basic, backstory, items, quotes, relations };
+        });
+        return updatedData;
+    }
+
+    document.getElementById('exportBtn').onclick = () => {
+        const data = collectData();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'characters.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('已导出 characters.json，请将此文件放置在网站根目录替换原文件。');
+    };
+
+    document.getElementById('importBtn').onclick = () => {
+        document.getElementById('importFile').click();
+    };
+    document.getElementById('importFile').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const imported = JSON.parse(ev.target.result);
+                charactersData = imported;
+                renderEditors();
+                alert('导入成功！请记得点击“导出 JSON 文件”保存到本地并替换原文件。');
+            } catch (err) {
+                alert('JSON 解析失败');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    loadDefaultData();
+</script>
+</body>
+</html>
