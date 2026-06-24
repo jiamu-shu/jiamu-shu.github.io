@@ -311,7 +311,6 @@
         const tabContents = document.querySelectorAll('.tab-content');
 
         function switchTab(tabId) {
-            // 更新 tab 样式
             tabs.forEach(tab => {
                 const tabValue = tab.getAttribute('data-tab');
                 if (tabValue === tabId) {
@@ -320,7 +319,6 @@
                     tab.classList.remove('active');
                 }
             });
-            // 更新内容显示
             tabContents.forEach(content => {
                 if (content.id === `${tabId}-content`) {
                     content.classList.add('active');
@@ -337,24 +335,14 @@
             });
         });
 
-        // ==================== 2. 签到功能 ====================
-        const signBtn = document.getElementById('signin-btn');
-        if (signBtn) {
-            signBtn.addEventListener('click', function() {
-                alert('签到成功！感谢您的参与。');
-                this.textContent = '今日已签到';
-                this.disabled = true;
-            });
-        }
-
-        // ==================== 3. 阅读页按钮简单提示 ====================
+        // ==================== 2. 阅读页按钮简单提示 ====================
         document.querySelectorAll('.read-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 alert('阅读功能开发中，即将上线。');
             });
         });
 
-        // ==================== 4. 人物页：从 characters.json 加载九张卡片 ====================
+        // ==================== 3. 人物页：从 characters.json 加载九张卡片 ====================
         const gridContainer = document.getElementById('charactersGrid');
 
         async function loadCharacterCards() {
@@ -365,7 +353,6 @@
                 }
                 const charactersData = await response.json();
                 
-                // 将对象转为数组，保留 id
                 const characters = Object.entries(charactersData).map(([id, data]) => ({
                     id: parseInt(id),
                     name: data.name,
@@ -385,7 +372,7 @@
                     card.href = `character.html?id=${char.id}`;
                     card.className = 'character-card';
                     card.innerHTML = `
-                        <div class="character-avatar">${char.avatar}</div>
+                        <div class="character-avatar">${escapeHtml(char.avatar)}</div>
                         <div class="character-info">
                             <h3>${escapeHtml(char.name)}</h3>
                             <p>${escapeHtml(char.title)}</p>
@@ -418,6 +405,74 @@
             });
         }
 
+        // ==================== 4. 签到功能：随机抽取角色语录中的问候/早安/晚安 ====================
+        let greetingQuotes = []; // 存储所有符合条件的语录 { text, characterName, tag }
+
+        // 预先加载所有角色的语录，筛选出 tag 为“问候”、“早安”、“晚安”的句子
+        async function loadGreetingQuotes() {
+            try {
+                const response = await fetch('characters.json');
+                if (!response.ok) throw new Error('无法加载角色数据');
+                const charactersData = await response.json();
+                
+                for (const [id, char] of Object.entries(charactersData)) {
+                    if (char.quotes && Array.isArray(char.quotes)) {
+                        char.quotes.forEach(quote => {
+                            // 匹配 tag 为“问候”、“早安”、“晚安” (精确匹配，忽略大小写？这里严格匹配中文)
+                            if (quote.tag === "问候" || quote.tag === "早安" || quote.tag === "晚安") {
+                                greetingQuotes.push({
+                                    text: quote.text,
+                                    character: char.name,
+                                    tag: quote.tag
+                                });
+                            }
+                        });
+                    }
+                }
+                console.log(`已加载 ${greetingQuotes.length} 条问候/早安/晚安语录`);
+            } catch (error) {
+                console.error('加载语录失败:', error);
+                // 如果加载失败，提供一个默认的句子池
+                greetingQuotes = [
+                    { text: "愿主的庇佑与你同道，愿主的恩泽护你左右。", character: "莱芙蕾", tag: "问候" },
+                    { text: "早安，今天有哪里不舒服的吗？", character: "鸢茉", tag: "早安" },
+                    { text: "早。我先去睡觉了，昨天晚上忙着算行星轨迹去了。", character: "赫卡忒", tag: "早安" },
+                    { text: "晚安，愿你好梦。", character: "慕容夏华", tag: "晚安" },
+                    { text: "早安，需要一个笑话开启新的一天吗？", character: "ABCD", tag: "早安" },
+                    { text: "晚安，我的朋友。今天是否为正义的到来贡献了力量呢？", character: "萨摩苏恩", tag: "晚安" }
+                ];
+            }
+        }
+
+        // 随机获取一条语录
+        function getRandomGreeting() {
+            if (greetingQuotes.length === 0) {
+                return "今日签到，愿你平安。";
+            }
+            const randomIndex = Math.floor(Math.random() * greetingQuotes.length);
+            const quote = greetingQuotes[randomIndex];
+            // 格式化输出：角色名 · 标签：语录内容
+            return `【${quote.character} · ${quote.tag}】\n“${quote.text}”`;
+        }
+
+        // 签到按钮逻辑
+        const signBtn = document.getElementById('signin-btn');
+        if (signBtn) {
+            // 先加载语录，再绑定事件
+            loadGreetingQuotes().then(() => {
+                signBtn.addEventListener('click', function() {
+                    // 随机弹出一句语录
+                    const greeting = getRandomGreeting();
+                    alert(greeting);
+                    // 原有的签到成功逻辑
+                    alert('签到成功！感谢您的参与。');
+                    this.textContent = '今日已签到';
+                    this.disabled = true;
+                });
+            });
+        }
+
+        // 加载人物卡片（不影响签到）
         loadCharacterCards();
     </script>
 </body>
